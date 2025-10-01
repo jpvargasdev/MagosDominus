@@ -9,7 +9,7 @@ services:
     volumes:
       - ./:/app
     command: ["air", "-c", ".air.toml"]
-    container_name: mini-gitops
+    container_name: magos-dominus
     environment:
       ENV: "debug"
       GIN_MODE: "debug"

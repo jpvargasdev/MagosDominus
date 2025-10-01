@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"mini-gitops/internal/cli"
+	"magos-dominus/internal/cli"
 )
 
 func main() {
