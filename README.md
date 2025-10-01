@@ -1,7 +1,14 @@
-## mini-flux
+# ⚙️ Magos_Dominus
 
-mini-flux is a lightweight GitOps agent designed for homelabs and small servers.
-It borrows ideas from FluxCD (image automation, Git as the source of truth) but avoids Kubernetes and heavy CRDs. Instead, it runs on a simple Linux box with Podman Compose.
+“The Machine does not err. The flesh errs. The Code is truth, and I am its voice.” – Credus del Adeptus Mechanicus
+
+## 📜 About
+
+Magos_Dominus is a lightweight GitOps agent forged in the spirit of the Adeptus Mechanicus. Its sole purpose: to enforce the declared state from your sacred repository (Git) and reconcile it with the material reality of your homelab.
+
+Unlike the bloated rites of Kubernetes and endless CRDs, Magos_Dominus imposes order directly on a simple Linux server with Podman Compose. No unnecessary ceremony, no wasted bureaucracy – only obedience to the written mandate.
+
+Each reconciliation loop is a ritual. Each deployment, a litany. Where drift appears, corruption is purged. Where the manifest and the machine diverge, the Magos enforces the will of the Code.
 
 ⸻
 
