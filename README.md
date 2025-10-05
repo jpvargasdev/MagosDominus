@@ -35,38 +35,30 @@ Each reconciliation loop is a ritual. Each deployment, a litany. Where drift app
   
 ## 📂 Repository layout
 
-cmd/mini-flux/        # entrypoint
+cmd/server/           # entrypoint
+internal/cli/         # command-line interface
 internal/watcher/     # registry polling & events
-internal/policy/      # image policy evaluation
-internal/reconciler/  # patching YAML & GitOps commit
-internal/git/         # GitHub App token + push/PR
-internal/applier/     # optional compose runner
-internal/config/      # config & policy loaders
-internal/state/       # local cache
-policies/             # declarative image policies
-configs/              # main config.yaml
+internal/daemon/      # reconciliation loop     
 
-## 🔑 Config basics
-	•	configs/config.yaml: main settings
-	•	policies/*.yml: declarative rules per app
-	•	Apps: each app links to a Compose file and a policy
+## 🔑 Config basics .env file
+* MD_REPO = env variable with the path to your GitOps repo.
 
-Example policy:
-```
-apiVersion: v1
-kind: ImagePolicy
-metadata:
-  name: guilliman
-spec:
-  selector:
-    semver:
-      range: ">=1.2.0 <2.0.0"
-      allowPrerelease: false
-  constraints:
-    arch: ["amd64"]
-  rollout:
-    minAge: "10m"
-```
+# Image policy
+Add a comment in your compose file, just after the image line, like so:
+
+1. Policy Semver 
+image: ...image:0.0.1 # {"magos": {"policy": "semver", "repo": "repoUrl"}}
+
+2. Policy Latest
+image: ...image:latest # {"magos": {"policy": "latest", "repo": "repoUrl"}}
+
+3. Policy Digest
+image: ...image@sha256:abcd1234 # {"magos": {"policy": "digest", "repo": "repoUrl"}}
+
+* JSON comment should start with # {"magos"
+* MagosDominus ignores comments that do not start with # {"magos"
+* The field "policy" defines the policy to be enforced
+* Reconciliation only replaces <tag> or <digest> with the latest matching tag or digest.
 
 ## 🚀 How it works
 	1.	Watcher detects a new image in GHCR.
