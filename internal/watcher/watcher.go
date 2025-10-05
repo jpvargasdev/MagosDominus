@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"time"
+  "fmt"
 )
 
 type Target struct {
@@ -40,14 +41,16 @@ func New(targets []Target) *Watcher {
 }
 
 func (w *Watcher) Start(ctx context.Context) error {
+  b := NewEchoBackend("1.0.0-dev")
+  
 	if len(w.targets) == 0 {
 		log.Printf("[watcher] no targets configured; idle")
 	}
 
-	ticker := time.NewTicker(6 * time.Hour)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
-	w.runOnce()
+	w.runOnce(ctx, b)
 
 	for {
 		select {
@@ -55,12 +58,12 @@ func (w *Watcher) Start(ctx context.Context) error {
 			log.Printf("[watcher] context canceled, stopping")
 			return ctx.Err()
 		case <-ticker.C:
-			w.runOnce()
+			w.runOnce(ctx, b)
 		}
 	}
 }
 
-func (w *Watcher) runOnce() {
+func (w *Watcher) runOnce(ctx context.Context, backend Backend) {
 	for _, t := range w.targets {
 		log.Printf("[watcher] checking target: %s (%s/%s/%s:%s) policy=%s interval=%d",
 			t.Name,
@@ -71,6 +74,22 @@ func (w *Watcher) runOnce() {
 			t.Policy,
       t.Interval,
 		)
+
+    repo := fmt.Sprintf("%s/%s", t.Image.Owner, t.Image.Name)
+		log.Printf("[watcher] checking %s:%s (policy=%s)", repo, t.Image.Tag, t.Policy)
+
+		digest, tag, _, notModified, err := backend.HeadDigest(ctx, repo, t.Image.Tag, "")
+		if err != nil {
+			log.Printf("[watcher] error checking %s: %v", repo, err)
+			continue
+		}
+
+		if notModified {
+			log.Printf("[watcher] no change for %s:%s", repo, tag)
+			continue
+		}
+
+		log.Printf("[watcher] found update: %s:%s -> digest=%s", repo, tag, digest)
 	}
 }
 
