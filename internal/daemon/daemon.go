@@ -7,11 +7,10 @@ import (
 )
 
 type Daemon struct {
-	cfg *watcher.Config
 }
 
-func New(cfg *watcher.Config) *Daemon {
-	return &Daemon{cfg: cfg}
+func New() *Daemon {
+	return &Daemon{}
 }
 
 func (d *Daemon) Start(ctx context.Context) error {
@@ -25,8 +24,17 @@ func (d *Daemon) Start(ctx context.Context) error {
   log.Printf("[repo] synced at %s", rm.Path)
 
 
-  // 2. Create and start watcher with current targets
-	w := watcher.New(d.cfg.Watcher.Targets)
+  // 2. Parse magos annotations
+  annotations, err := rm.ParseMagosAnnotations()
+  if err != nil {
+    return err
+  }
+
+  targets := rm.BuildTargets(annotations)
+  log.Printf("[repo] find %d targets", len(targets))
+  
+  // 3. Create and start watcher with current targets
+	w := watcher.New(targets)
 
 	return w.Start(ctx)
 }

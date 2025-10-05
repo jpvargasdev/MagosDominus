@@ -4,20 +4,27 @@ import (
 	"context"
 	"log"
 	"time"
-  "os"
 )
 
-type TargetConfig struct {
-	Name string 
-	Repo string 
-	Tag  string 
+type Target struct {
+	Name     string    // logical name (service or file reference)
+	Image    ImageRef  // parsed reference
+	Policy   string    // "semver", "latest", "digest", "manual"
+	Interval int       // optional: poll interval in seconds (could default)
+}
+
+type ImageRef struct {
+	Registry string
+	Owner    string
+	Name     string
+	Tag      string
 }
 
 type WatcherConfig struct {
 	Registry     string
 	DefaultTag   string
 	PollInterval time.Duration
-	Targets      []TargetConfig
+	Targets      []Target
 }
 
 type Config struct {
@@ -25,10 +32,10 @@ type Config struct {
 }
 
 type Watcher struct {
-	targets []TargetConfig
+	targets []Target
 }
 
-func New(targets []TargetConfig) *Watcher {
+func New(targets []Target) *Watcher {
 	return &Watcher{targets: targets}
 }
 
@@ -55,25 +62,15 @@ func (w *Watcher) Start(ctx context.Context) error {
 
 func (w *Watcher) runOnce() {
 	for _, t := range w.targets {
-		log.Printf("[watcher] checking target: %s (%s:%s)", t.Name, t.Repo, t.Tag)
+		log.Printf("[watcher] checking target: %s (%s/%s/%s:%s) policy=%s interval=%d",
+			t.Name,
+			t.Image.Registry,
+			t.Image.Owner,
+			t.Image.Name,
+			t.Image.Tag,
+			t.Policy,
+      t.Interval,
+		)
 	}
 }
 
-func LoadConfigFromEnv() (*Config, error) {
-	cfg := &Config{
-		Watcher: WatcherConfig{
-			Registry:     os.Getenv("MD_REGISTRY"),
-			DefaultTag:   os.Getenv("MD_DEFAULT_TAG"),
-			PollInterval: 6 * time.Hour,
-			Targets: []TargetConfig{
-				{
-					Name: "example",
-					Repo: "juan/administratus",
-					Tag:  "latest",
-				},
-			},
-		},
-	}
-
-	return cfg, nil
-}

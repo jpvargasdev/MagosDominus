@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"magos-dominus/internal/daemon"
-	"magos-dominus/internal/watcher"
 	"os"
 	"os/signal"
 	"syscall"
@@ -55,16 +54,10 @@ var runCmd = &cobra.Command{
 	Short: "Start the magos-dominus daemon (watch + reconcile loop)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-
-		cfg, err := watcher.LoadConfigFromEnv() 
-		if err != nil {
-			return err
-		}
-
 		ctx, cancel := signalContext()
 		defer cancel()
 
-		d := daemon.New(cfg) 
+		d := daemon.New() 
 		return d.Start(ctx) 
 	},
 }
