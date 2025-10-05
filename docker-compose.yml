@@ -1,16 +1,12 @@
-version: "3.9"
 services:
   app:
     build:
       context: .
-      # Correct the path to your Dockerfile
       dockerfile: Dockerfile.dev
-    # Important to bind/mount your codebase dir to /app dir for live reload
     volumes:
       - ./:/app
     command: ["air", "-c", ".air.toml"]
     container_name: magos-dominus
     environment:
       ENV: "debug"
-      GIN_MODE: "debug"
 
