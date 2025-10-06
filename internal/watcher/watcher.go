@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"magos-dominus/internal/state"
+	"strings"
 	"time"
 )
 
@@ -41,17 +42,17 @@ func New(targets []Target) *Watcher {
 	return &Watcher{targets: targets}
 }
 
-func (w *Watcher) Start(ctx context.Context, state *state.File) error {
+func (w *Watcher) Start(ctx context.Context, st *state.File) error {
   ghcr := NewGHCR()
   
 	if len(w.targets) == 0 {
 		log.Printf("[watcher] no targets configured; idle")
 	}
 
-	ticker := time.NewTicker(10 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
-	w.runOnce(ctx, ghcr)
+	w.runOnce(ctx, ghcr, st)
 
 	for {
 		select {
@@ -59,12 +60,12 @@ func (w *Watcher) Start(ctx context.Context, state *state.File) error {
 			log.Printf("[watcher] context canceled, stopping")
 			return ctx.Err()
 		case <-ticker.C:
-			w.runOnce(ctx, ghcr)
+			w.runOnce(ctx, ghcr, st)
 		}
 	}
 }
 
-func (w *Watcher) runOnce(ctx context.Context, ghcr *GHCR) {
+func (w *Watcher) runOnce(ctx context.Context, ghcr *GHCR, st *state.File) {
 	for _, t := range w.targets {
 		log.Printf("[watcher] checking target: %s (%s/%s/%s:%s) policy=%s interval=%d",
 			t.Name,
@@ -76,21 +77,41 @@ func (w *Watcher) runOnce(ctx context.Context, ghcr *GHCR) {
       t.Interval,
 		)
 
-    repo := fmt.Sprintf("%s/%s", t.Image.Owner, t.Image.Name)
-		log.Printf("[watcher] checking %s:%s (policy=%s)", repo, t.Image.Tag, t.Policy)
+    repo := fmt.Sprintf("%s/%s",
+      t.Image.Owner,
+      t.Image.Name,
+    )
 
-		digest, tag, _, notModified, err := ghcr.HeadDigest(ctx, repo, t.Image.Tag, "")
-		if err != nil {
-			log.Printf("[watcher] error checking %s: %v", repo, err)
-			continue
-		}
+    ref := strings.ToLower(t.Image.Tag)
 
-		if notModified {
-			log.Printf("[watcher] no change for %s:%s", repo, tag)
-			continue
-		}
+    key := state.Key(
+      strings.ToLower(t.Image.Tag),
+      strings.ToLower(t.Image.Owner),
+      strings.ToLower(t.Image.Name),
+      ref,
+    )
 
-		log.Printf("[watcher] found update: %s:%s -> digest=%s", repo, tag, digest)
+    // read cached etag (if any)
+    prev, _ := st.Get(key)
+    etagIn  := prev.ETag
+
+    digest, resolvedRef, etagOut, notModified, err := ghcr.HeadDigest(ctx, repo, ref, etagIn)
+    if err != nil {
+      log.Printf("[watcher] error checking %s: %v", repo, err)
+      continue
+    }
+
+    if notModified {
+      log.Printf("[watcher] no change for %s:%s", repo, resolvedRef)
+      continue
+    }
+
+    changed := st.UpsertDigest(key, digest, etagOut, t.Policy)
+    if changed {
+      log.Printf("[watcher] update: %s:%s -> digest=%s", repo, resolvedRef, digest) 
+    } else {
+      log.Printf("[watcher] digest unchanged for %s:%s", repo, resolvedRef)
+    }
 	}
 }
 
