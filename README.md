@@ -1,4 +1,4 @@
-# ⚙️ Magos_Dominus
+# ⚙️ MagosDominus (a.k.a. Magos)
 
 “The Machine does not err. The flesh errs. The Code is truth, and I am its voice.” – Credus del Adeptus Mechanicus
 
