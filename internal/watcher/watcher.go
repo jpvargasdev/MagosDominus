@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"magos-dominus/internal/state"
+  "magos-dominus/internal/events"
 	"strings"
 	"time"
 )
@@ -36,10 +37,11 @@ type Config struct {
 
 type Watcher struct {
 	targets []Target
+  emitter events.Emitter 
 }
 
-func New(targets []Target) *Watcher {
-	return &Watcher{targets: targets}
+func New(targets []Target, em events.Emitter) *Watcher {
+  return &Watcher{targets: targets, emitter: em}
 }
 
 func (w *Watcher) Start(ctx context.Context, st *state.File) error {
@@ -109,6 +111,14 @@ func (w *Watcher) runOnce(ctx context.Context, ghcr *GHCR, st *state.File) {
     changed := st.UpsertDigest(key, digest, etagOut, t.Policy)
     if changed {
       log.Printf("[watcher] update: %s:%s -> digest=%s", repo, resolvedRef, digest) 
+      w.emitter.Emit(events.Event{
+        Discovered: time.Now().UTC(),
+        File:       t.Name,
+        Repo:       repo,
+        Ref:        resolvedRef,
+        Digest:     digest,
+        Policy:     t.Policy,
+      })
     } else {
       log.Printf("[watcher] digest unchanged for %s:%s", repo, resolvedRef)
     }
