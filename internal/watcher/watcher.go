@@ -2,9 +2,10 @@ package watcher
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"magos-dominus/internal/state"
 	"time"
-  "fmt"
 )
 
 type Target struct {
@@ -40,14 +41,14 @@ func New(targets []Target) *Watcher {
 	return &Watcher{targets: targets}
 }
 
-func (w *Watcher) Start(ctx context.Context) error {
+func (w *Watcher) Start(ctx context.Context, state *state.File) error {
   ghcr := NewGHCR()
   
 	if len(w.targets) == 0 {
 		log.Printf("[watcher] no targets configured; idle")
 	}
 
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(10 * time.Minute)
 	defer ticker.Stop()
 
 	w.runOnce(ctx, ghcr)

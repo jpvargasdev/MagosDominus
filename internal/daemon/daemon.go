@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"log"
+	"magos-dominus/internal/state"
 	"magos-dominus/internal/watcher"
 )
 
@@ -15,6 +16,10 @@ func New() *Daemon {
 
 func (d *Daemon) Start(ctx context.Context) error {
 	log.Printf("[daemon] starting...")
+  path := "tmp/magos/state.json"
+
+  // 0. Init Magos state
+  st := state.New(path)
 
   //  1. Sync GitOps repo 
   rm := NewRepoManager()
@@ -36,5 +41,5 @@ func (d *Daemon) Start(ctx context.Context) error {
   // 3. Create and start watcher with current targets
 	w := watcher.New(targets)
 
-	return w.Start(ctx)
+	return w.Start(ctx, st)
 }
