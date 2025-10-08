@@ -9,7 +9,8 @@ import (
 
 
 type Config struct {
-  RepoURL string
+  RepoURL      string
+  PreferDigest bool
 }
 
 func getRepo() *Config {
@@ -23,3 +24,13 @@ func getRepo() *Config {
   }
 }
 
+func getPreferDigest() *Config {
+  err := godotenv.Load()
+  if err != nil {
+    log.Fatal("Error loading .env file")
+  }
+  
+  return &Config{
+    PreferDigest: os.Getenv("MD_PREFER_DIGEST") == "true",
+  }
+}

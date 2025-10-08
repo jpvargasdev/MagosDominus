@@ -57,7 +57,7 @@ var runCmd = &cobra.Command{
 		ctx, cancel := signalContext()
 		defer cancel()
 
-		d := daemon.New() 
+		d := daemon.New(64) 
 		return d.Start(ctx) 
 	},
 }

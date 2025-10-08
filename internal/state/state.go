@@ -1,6 +1,6 @@
 package state
 
- import (
+import (
 	"encoding/json"
 	"errors"
 	"os"
