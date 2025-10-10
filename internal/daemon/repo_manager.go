@@ -4,17 +4,17 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
+	"magos-dominus/internal/config"
+	"magos-dominus/internal/github"
 	"magos-dominus/internal/watcher"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
 type RepoManager struct {
-	URL  string
-	Path string
+  CleanURL string
+  Path     string
 }
 
 type MagosAnnotation struct {
@@ -25,31 +25,20 @@ type MagosAnnotation struct {
 }
 
 func NewRepoManager() *RepoManager {
-	cfg := getRepo()
-  log.Printf("[repo] URL: %s", cfg.RepoURL)
-
+	gh := config.GetGithubConfig() // MD_REPO is "<owner>/<repo>"
+	clean := fmt.Sprintf("https://github.com/%s.git", gh.RepoURL)
 	repoPath := filepath.Join(os.TempDir(), "git")
 
 	return &RepoManager{
-		URL:  cfg.RepoURL,
-		Path: repoPath,
+		CleanURL: clean,
+		Path:     repoPath,
 	}
 }
 
 func (r *RepoManager) Sync() error {
-	if _, err := os.Stat(r.Path); os.IsNotExist(err) {
-		log.Printf("[repo] cloning %s into %s", r.URL, r.Path)
-		cmd := exec.Command("git", "clone", r.URL, r.Path)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		return cmd.Run()
-	}
-
-	log.Printf("[repo] pulling latest changes in %s", r.Path)
-	cmd := exec.Command("git", "-C", r.Path, "pull")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	ghCfg := config.GetGithubConfig()
+	client := github.New(ghCfg.AppId, ghCfg.InstallationId, ghCfg.PrivateKeyPath, ghCfg.RepoURL)
+	return client.CloneOrPull(r.Path)
 }
 
 func (r *RepoManager) ParseMagosAnnotations() ([]MagosAnnotation, error) {

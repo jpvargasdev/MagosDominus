@@ -7,6 +7,7 @@ import (
 	"magos-dominus/internal/events"
 	"magos-dominus/internal/state"
 	"magos-dominus/internal/watcher"
+  "magos-dominus/internal/config"
 )
 
 type Daemon struct {
@@ -29,7 +30,7 @@ func (d *Daemon) consume(ctx context.Context, rm *RepoManager) {
     case <-ctx.Done():
       return
     case ev := <-d.events:
-      cfg := getPreferDigest() 
+      cfg := config.GetPreferDigest() 
 
       log.Printf("[event] repo=%s ref=%s digest=%s", ev.Repo, ev.Ref, ev.Digest)
       // 1. rm.Sync()
