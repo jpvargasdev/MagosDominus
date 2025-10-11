@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,24 +9,7 @@ import (
 	"magos-dominus/internal/watcher"
 )
 
-type fakeBackend struct {
-	byRepo map[string]struct {
-		digest string
-		etag   string
-		ref    string
-		err    error
-	}
-}
-
-func (f fakeBackend) HeadDigest(ctx context.Context, repo, ref, etag string) (string, string, string, bool, error) {
-	entry, ok := f.byRepo[repo+":"+ref]
-	if !ok {
-		return "", ref, "", false, os.ErrNotExist
-	}
-	return entry.digest, entry.ref, entry.etag, false, entry.err
-}
-
-func TestWarmState_SeedsEntries(t *testing.T) {
+func TestWarmState_SeedsEntriesWithEmptyValues(t *testing.T) {
 	tmp := t.TempDir()
 	st := state.New(filepath.Join(tmp, "state.json"))
 
@@ -54,32 +36,32 @@ func TestWarmState_SeedsEntries(t *testing.T) {
 		},
 	}
 
-	fb := fakeBackend{
-		byRepo: map[string]struct {
-			digest string
-			etag   string
-			ref    string
-			err    error
-		}{
-			"jpvargasdev/lexcodex:0.0.3": {digest: "sha256:aaa", etag: `"E1"`, ref: "0.0.3"},
-			"owner/app:1.2.3":            {digest: "sha256:bbb", etag: `"E2"`, ref: "1.2.3"},
-		},
-	}
-
-	if err := warmStateWithBackend(context.Background(), st, targets, fb); err != nil {
+	if err := warmState(st, targets); err != nil {
 		t.Fatalf("warmState error: %v", err)
 	}
 
 	key1 := state.Key("ghcr.io", "jpvargasdev", "lexcodex", "0.0.3")
 	e1, ok := st.Get(key1)
-	if !ok || e1.Digest != "sha256:aaa" || e1.ETag != `"E1"` || e1.Policy != "semver" {
-		t.Fatalf("bad entry for key1: ok=%v entry=%+v", ok, e1)
+	if !ok {
+		t.Fatalf("missing entry for key1")
+	}
+	if e1.Digest != "" || e1.ETag != "" {
+		t.Fatalf("expected empty digest/etag for key1, got digest=%q etag=%q", e1.Digest, e1.ETag)
+	}
+	if e1.Policy != "semver" {
+		t.Fatalf("expected policy=semver for key1, got %q", e1.Policy)
 	}
 
 	key2 := state.Key("ghcr.io", "owner", "app", "1.2.3")
 	e2, ok := st.Get(key2)
-	if !ok || e2.Digest != "sha256:bbb" || e2.ETag != `"E2"` || e2.Policy != "latest" {
-		t.Fatalf("bad entry for key2: ok=%v entry=%+v", ok, e2)
+	if !ok {
+		t.Fatalf("missing entry for key2")
+	}
+	if e2.Digest != "" || e2.ETag != "" {
+		t.Fatalf("expected empty digest/etag for key2, got digest=%q etag=%q", e2.Digest, e2.ETag)
+	}
+	if e2.Policy != "latest" {
+		t.Fatalf("expected policy=latest for key2, got %q", e2.Policy)
 	}
 
 	if _, err := os.Stat(filepath.Join(tmp, "state.json")); err != nil {
@@ -87,7 +69,7 @@ func TestWarmState_SeedsEntries(t *testing.T) {
 	}
 }
 
-func TestWarmState_SkipsOnErrorButSavesOthers(t *testing.T) {
+func TestWarmState_SeedsAllTargets_NoSkips(t *testing.T) {
 	tmp := t.TempDir()
 	st := state.New(filepath.Join(tmp, "state.json"))
 
@@ -114,29 +96,17 @@ func TestWarmState_SkipsOnErrorButSavesOthers(t *testing.T) {
 		},
 	}
 
-	fb := fakeBackend{
-		byRepo: map[string]struct {
-			digest string
-			etag   string
-			ref    string
-			err    error
-		}{
-			"ok/good:1.0.0":   {digest: "sha256:okok", etag: `"E-ok"`, ref: "1.0.0"},
-			"fail/bad:9.9.9":  {err: os.ErrNotExist},
-		},
-	}
-
-	if err := warmStateWithBackend(context.Background(), st, targets, fb); err != nil {
+	if err := warmState(st, targets); err != nil {
 		t.Fatalf("warmState error: %v", err)
 	}
 
 	keyOK := state.Key("ghcr.io", "ok", "good", "1.0.0")
-	if e, ok := st.Get(keyOK); !ok || e.Digest != "sha256:okok" {
-		t.Fatalf("expected seeded ok entry, got ok=%v entry=%+v", ok, e)
+	if e, ok := st.Get(keyOK); !ok || e.Policy == "" {
+		t.Fatalf("expected seeded ok entry with policy, got ok=%v entry=%+v", ok, e)
 	}
 
-	keyFail := state.Key("ghcr.io", "fail", "bad", "9.9.9")
-	if _, ok := st.Get(keyFail); ok {
-		t.Fatalf("did not expect entry for failing target")
+	keyOther := state.Key("ghcr.io", "fail", "bad", "9.9.9")
+	if e, ok := st.Get(keyOther); !ok || e.Policy == "" {
+		t.Fatalf("expected seeded second entry with policy, got ok=%v entry=%+v", ok, e)
 	}
 }

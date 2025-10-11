@@ -79,7 +79,7 @@ func (d *Daemon) Start(ctx context.Context) error {
   log.Printf("[repo] find %d targets", len(targets))
 
   // 3. Warm state from repo
-  if err := warmState(ctx, st, targets); err != nil {
+  if err := warmState(st, targets); err != nil {
     log.Printf("[warm] failed: %v", err)
   }
   

@@ -95,7 +95,8 @@ func (w *Watcher) runOnce(ctx context.Context, ghcr *GHCR, st *state.File) {
 			etagIn = prev.ETag
 		}
 
-		digest, resolvedRef, etagOut, notMod, err := ghcr.HeadDigest(ctx, repo, ref, etagIn)
+		digest, resolvedRef, etagOut, notMod, err := ghcr.HeadDigest(ctx, repo, ref, etagIn, t.Policy)
+    log.Printf("[watcher] repo=%s ref=%s digest=%s", repo, ref, etagOut)
 		if err != nil {
 			log.Printf("[watcher] skip %s:%s: %v", repo, ref, err)
 			continue
