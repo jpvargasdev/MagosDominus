@@ -30,7 +30,7 @@ func (d *Daemon) consume(ctx context.Context, rm *RepoManager) {
     case <-ctx.Done():
       return
     case ev := <-d.events:
-      cfg := config.GetPreferDigest() 
+      cfg := config.GetGitPreferences() 
 
       log.Printf("[event] repo=%s ref=%s digest=%s", ev.Repo, ev.Ref, ev.Digest)
       // 1. rm.Sync()
@@ -42,7 +42,12 @@ func (d *Daemon) consume(ctx context.Context, rm *RepoManager) {
         continue
       }
       // 3. rm.CommitAndPush()
+      if err := rm.CommitAndPush(cfg.PreferPR); err != nil {
+        log.Printf("[error] commit and push: %v", err)
+        continue
+      }
       // 4. Run reconcile.sh
+      log.Printf("[event] running reconcile.sh")
     }
   }
 }

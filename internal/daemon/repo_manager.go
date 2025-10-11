@@ -1,6 +1,9 @@
 package daemon
 
 import (
+  "context"
+  "log"
+  "time"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -37,8 +40,8 @@ func NewRepoManager() *RepoManager {
 
 func (r *RepoManager) Sync() error {
 	ghCfg := config.GetGithubConfig()
-	client := github.New(ghCfg.AppId, ghCfg.InstallationId, ghCfg.PrivateKeyPath, ghCfg.RepoURL)
-	return client.CloneOrPull(r.Path)
+	gh := github.New(ghCfg.AppId, ghCfg.InstallationId, ghCfg.PrivateKeyPath, ghCfg.RepoURL)
+	return gh.CloneOrPull(r.Path)
 }
 
 func (r *RepoManager) ParseMagosAnnotations() ([]MagosAnnotation, error) {
@@ -137,4 +140,37 @@ func splitImageRef(img string) (string, string, string, string) {
 		tag = nameTag[1]
 	}
 	return registry, owner, name, tag
+}
+
+func (r *RepoManager) CommitAndPush(preferPR bool) error {
+	ctx := context.Background()
+
+	ghCfg := config.GetGithubConfig()
+	gh := github.New(ghCfg.AppId, ghCfg.InstallationId, ghCfg.PrivateKeyPath, ghCfg.RepoURL)
+
+
+	message := "magos: automated update"
+	changed, err := gh.Commit(r.Path, message)
+	if err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	if !changed {
+		log.Printf("[repo] nothing to commit")
+		return nil
+	}
+
+	if preferPR {
+		branch := fmt.Sprintf("magos/auto-%d", time.Now().Unix())
+		title := message
+		body := "Automated update from MagosDominus."
+		if _, err := gh.PushAsPR(ctx, r.Path, "main", branch, title, body); err != nil {
+			return fmt.Errorf("push as PR: %w", err)
+		}
+		return nil
+	}
+
+	if err := gh.PushToMain(r.Path); err != nil {
+		return fmt.Errorf("push to main: %w", err)
+	}
+	return nil
 }

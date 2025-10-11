@@ -12,12 +12,13 @@ import (
 type Config struct {
   RepoURL        string
   PreferDigest   bool
+  PreferPR       bool
   AppId          int64
   InstallationId int64 
   PrivateKeyPath string
 }
 
-func GetPreferDigest() *Config {
+func GetGitPreferences() *Config {
   err := godotenv.Load()
   if err != nil {
     log.Fatal("Error loading .env file")
@@ -25,6 +26,7 @@ func GetPreferDigest() *Config {
   
   return &Config{
     PreferDigest: os.Getenv("MD_PREFER_DIGEST") == "true",
+    PreferPR: os.Getenv("MD_PREFER_PR") == "true",
   }
 }
 
