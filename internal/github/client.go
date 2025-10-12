@@ -101,7 +101,6 @@ func (c *Client) CloneOrPull(localPath string) error {
 func (c *Client) UpdateFileSigned(ctx context.Context, path, branch, message string, content []byte) (string, error) {
 	owner, repo := c.owner(), c.repoName()
 
-	// obtener contenido actual (para SHA)
 	rc, _, _, err := c.api.Repositories.GetContents(ctx, owner, repo, path,
 		&github.RepositoryContentGetOptions{Ref: branch})
 	if err != nil && !strings.Contains(err.Error(), "404") {
@@ -118,7 +117,6 @@ func (c *Client) UpdateFileSigned(ctx context.Context, path, branch, message str
 		Content: content,
 		Branch:  github.String(branch),
 		SHA:     sha,
-		// sin author ni committer → GitHub App firma automáticamente
 	}
 
 	res, _, err := c.api.Repositories.UpdateFile(ctx, owner, repo, path, opts)

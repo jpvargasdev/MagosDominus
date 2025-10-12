@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./:/app
+      - /var/run/docker.sock:/var/run/docker.sock
     command: ["air", "-c", ".air.toml"]
     container_name: magos-dominus
     environment:

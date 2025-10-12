@@ -2,7 +2,7 @@ FROM golang:1.25-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache git bash
+RUN apk add --no-cache git bash docker-cli docker-cli-compose
 
 RUN go install github.com/air-verse/air@latest
 
@@ -10,5 +10,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+
+RUN chmod +x scripts/*.sh || true
 
 CMD ["air", "-c", ".air.toml"]

@@ -38,7 +38,7 @@ services:
 	ref := "0.0.4"
 	digest := "sha256:deadbeefcafebabe0123456789abcdef0123456789abcdef0123456789abcd"
 
-	updated, err := rm.UpdateImage(fp, ref, digest, true) // useDigest=true
+	updated, err := rm.UpdateImage(fp, ref, digest, "digest") // useDigest=true
 	if err != nil {
 		t.Fatalf("UpdateImage error: %v", err)
 	}
@@ -65,7 +65,7 @@ services:
 	fp := writeTemp(t, tmp, "compose.yml", strings.TrimLeft(orig, "\n"))
 
 	rm := &RepoManager{Path: tmp}
-	updated, err := rm.UpdateImage(fp, "0.0.4", "", false) // useDigest=false
+	updated, err := rm.UpdateImage(fp, "0.0.4", "", "semver") // useDigest=false
 	if err != nil {
 		t.Fatalf("UpdateImage error: %v", err)
 	}
@@ -89,7 +89,7 @@ services:
 	fp := writeTemp(t, tmp, "compose.yml", strings.TrimLeft(orig, "\n"))
 
 	rm := &RepoManager{Path: tmp}
-	updated, err := rm.UpdateImage(fp, "ignored", "sha256:deadbeef", true)
+	updated, err := rm.UpdateImage(fp, "ignored", "sha256:deadbeef", "digest")
 	if err != nil {
 		t.Fatalf("UpdateImage error: %v", err)
 	}
@@ -108,7 +108,7 @@ services:
 	fp := writeTemp(t, tmp, "compose.yml", strings.TrimLeft(orig, "\n"))
 
 	rm := &RepoManager{Path: tmp}
-	updated, err := rm.UpdateImage(fp, "2.0.0", "sha256:xyz", false)
+	updated, err := rm.UpdateImage(fp, "2.0.0", "sha256:xyz", "digest")
 	if err != nil {
 		t.Fatalf("UpdateImage error: %v", err)
 	}
@@ -127,7 +127,7 @@ services:
 	fp := writeTemp(t, tmp, "compose.yml", strings.TrimLeft(orig, "\n"))
 
 	rm := &RepoManager{Path: tmp}
-	if _, err := rm.UpdateImage(fp, "", "not-a-digest", true); err == nil {
+	if _, err := rm.UpdateImage(fp, "", "not-a-digest", "digest"); err == nil {
 		t.Fatalf("expected error for invalid digest")
 	}
 }

@@ -2,12 +2,14 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 	"log"
-  "fmt"
+	"magos-dominus/internal/config"
 	"magos-dominus/internal/events"
+	"magos-dominus/internal/reconciler"
 	"magos-dominus/internal/state"
 	"magos-dominus/internal/watcher"
-  "magos-dominus/internal/config"
+	"os"
 )
 
 type Daemon struct {
@@ -60,7 +62,10 @@ func (d *Daemon) consume(ctx context.Context, rm *RepoManager) {
 			}
 
 			// 4) reconcile hook (placeholder)
-			log.Printf("[event] running reconcile.sh")
+			log.Printf("[event] running reconcile.sh") 
+      if err := reconciler.RunReconcile(ctx, os.Getenv("MD_RECONCILE_SCRIPT"), rm.Path, ev.File, ev.Policy); err != nil {
+        log.Printf("[error] reconcile: %v", err)
+      }
 		}
 	}
 }
@@ -95,8 +100,11 @@ func (d *Daemon) Start(ctx context.Context) error {
   if err := warmState(st, targets); err != nil {
     log.Printf("[warm] failed: %v", err)
   }
+
+  // 4. Initial run
+  reconciler.RunAll(ctx, os.Getenv("MD_RECONCILE_SCRIPT"), rm.Path, targets)
   
-  // 3. Create and start watcher with current targets
+  // 5. Create and start watcher with current targets
   go d.consume(ctx, rm)
 	w := watcher.New(targets, d.EventsEmitter())
 	return w.Start(ctx, st)
