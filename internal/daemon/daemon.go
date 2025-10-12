@@ -102,7 +102,8 @@ func (d *Daemon) Start(ctx context.Context) error {
   }
 
   // 4. Initial run
-  reconciler.RunAll(ctx, os.Getenv("MD_RECONCILE_SCRIPT"), rm.Path, targets)
+  paths := rm.BuildReconcilePaths(annotations) 
+  reconciler.RunAll(ctx, os.Getenv("MD_RECONCILE_SCRIPT"), rm.Path, paths)
   
   // 5. Create and start watcher with current targets
   go d.consume(ctx, rm)

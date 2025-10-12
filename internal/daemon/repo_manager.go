@@ -105,6 +105,34 @@ func (r *RepoManager) ParseMagosAnnotations() ([]MagosAnnotation, error) {
 	return out, err
 }
 
+func (r *RepoManager) BuildReconcilePaths(annos []MagosAnnotation) []watcher.Target {
+	var out []watcher.Target
+	seen := map[string]struct{}{}
+
+	for _, a := range annos {
+		dir := filepath.Dir(a.File)
+		if _, ok := seen[dir]; ok {
+			continue
+		}
+		seen[dir] = struct{}{}
+
+		registry, owner, name, tag := splitImageRef(a.Image)
+		out = append(out, watcher.Target{
+			Name: a.File,
+			Image: watcher.ImageRef{
+				Registry: registry,
+				Owner:    owner,
+				Name:     name,
+				Tag:      tag,
+			},
+			Policy: a.Policy,
+			Interval: 0,
+		})
+	}
+
+	return out
+}
+
 func (r *RepoManager) BuildTargets(annos []MagosAnnotation) []watcher.Target {
 	var targets []watcher.Target
 	for _, a := range annos {
