@@ -33,7 +33,6 @@ go.work.sum
 *.pem
 *tmp
 
-scripts/reconcile.sh
-scripts/*.sh~
+**/scripts/reconcile.sh
 secrets/*.env
 secrets/*.sops.tmp
