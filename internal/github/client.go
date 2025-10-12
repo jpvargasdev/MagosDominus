@@ -14,134 +14,9 @@ import (
 )
 
 type Client struct {
-	api     *github.Client
-	itr     *ghinstallation.Transport
-	repo    string 
-}
-
-// Commit stages and commits local changes; returns false if nothing to commit.
-func (c *Client) Commit(localPath, message string) (bool, error) {
-	cmd := exec.Command("git", "-C", localPath, "add", ".")
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
-		return false, fmt.Errorf("git add: %w", err)
-	}
-
-	commit := exec.Command("git", "-C", localPath, "commit", "-m", message)
-	commit.Stdout, commit.Stderr = os.Stdout, os.Stderr
-	if err := commit.Run(); err != nil {
-		// exit 1 when there is nothing to commit
-		if ee, ok := err.(*exec.ExitError); ok && ee.ExitCode() == 1 {
-			log.Printf("[github] nothing to commit")
-			return false, nil
-		}
-		return false, fmt.Errorf("git commit: %w", err)
-	}
-
-	return true, nil
-}
-
-// PushToMain pushes the current HEAD to origin/main using a fresh installation token.
-func (c *Client) PushToMain(localPath string) error {
-	_, authURL, err := c.authURLs()
-	if err != nil {
-		return err
-	}
-	push := exec.Command("git", "-C", localPath, "push", authURL, "HEAD:refs/heads/main")
-	push.Stdout, push.Stderr = os.Stdout, os.Stderr
-	if err := push.Run(); err != nil {
-		return fmt.Errorf("git push main failed: %w", err)
-	}
-	log.Printf("[github] pushed to main")
-	return nil
-}
-
-// PushAsPR ensures a branch off base, pushes it, and opens a PR; returns PR URL.
-func (c *Client) PushAsPR(ctx context.Context, localPath, base, branch, title, body string) (string, error) {
-	_, authURL, err := c.authURLs()
-	if err != nil {
-		return "", err
-	}
-
-	// Make sure base is up-to-date locally
-	fetch := exec.Command("git", "-C", localPath, "fetch", authURL, base)
-	fetch.Stdout, fetch.Stderr = os.Stdout, os.Stderr
-	if err := fetch.Run(); err != nil {
-		return "", fmt.Errorf("git fetch %s: %w", base, err)
-	}
-
-	// Create or reset branch from origin/base
-	if err := c.ensureBranchFrom(localPath, base, branch); err != nil {
-		return "", err
-	}
-
-	// Push branch
-	push := exec.Command("git", "-C", localPath, "push", authURL, fmt.Sprintf("HEAD:refs/heads/%s", branch), branch)
-	push.Stdout, push.Stderr = os.Stdout, os.Stderr
-	if err := push.Run(); err != nil {
-		return "", fmt.Errorf("git push branch failed: %w", err)
-	}
-	log.Printf("[github] pushed branch %s", branch)
-
-	// Open PR
-	pr, _, err := c.api.PullRequests.Create(ctx, c.owner(), c.repoName(), &github.NewPullRequest{
-		Title: github.String(title),
-		Head:  github.String(branch),
-		Base:  github.String(base),
-		Body:  github.String(body),
-	})
-	if err != nil {
-		return "", fmt.Errorf("create PR: %w", err)
-	}
-	if pr.HTMLURL == nil {
-		return "", fmt.Errorf("create PR: missing URL")
-	}
-	log.Printf("[github] opened PR: %s", *pr.HTMLURL)
-	return *pr.HTMLURL, nil
-}
-
-// authURLs returns clean and tokenized remotes.
-func (c *Client) authURLs() (cleanURL, authURL string, err error) {
-	token, terr := c.itr.Token(context.Background())
-	if terr != nil {
-		return "", "", fmt.Errorf("github: get token: %w", terr)
-	}
-	clean := fmt.Sprintf("https://github.com/%s.git", c.repo)
-	auth := fmt.Sprintf("https://x-access-token:%s@github.com/%s.git", token, c.repo)
-	return clean, auth, nil
-}
-
-// ensureBranchFrom creates or resets a local branch from origin/<base>.
-func (c *Client) ensureBranchFrom(localPath, base, branch string) error {
-	// checkout base
-	coBase := exec.Command("git", "-C", localPath, "checkout", "-q", "-B", base, "origin/"+base)
-	coBase.Stdout, coBase.Stderr = os.Stdout, os.Stderr
-	if err := coBase.Run(); err != nil {
-		return fmt.Errorf("checkout base %s: %w", base, err)
-	}
-
-	// create/reset branch from base
-	co := exec.Command("git", "-C", localPath, "checkout", "-q", "-B", branch, "origin/"+base)
-	co.Stdout, co.Stderr = os.Stdout, os.Stderr
-	if err := co.Run(); err != nil {
-		return fmt.Errorf("create/reset branch %s: %w", branch, err)
-	}
-	return nil
-}
-
-// Small accessors to avoid splitting c.repo again elsewhere
-func (c *Client) owner() string {
-	parts := strings.SplitN(c.repo, ":", 2) // never hits, safety
-	_ = parts
-	p := strings.SplitN(c.repo, "/", 2)
-	return p[0]
-}
-func (c *Client) repoName() string {
-	p := strings.SplitN(c.repo, "/", 2)
-	if len(p) == 2 {
-		return p[1]
-	}
-	return c.repo
+	api      *github.Client
+	itr      *ghinstallation.Transport
+	repo     string 
 }
 
 func New(appID, installationID int64, privateKeyPath, repo string) *Client {
@@ -171,6 +46,19 @@ func normalizeRepo(s string) (string, error) {
 		return "", fmt.Errorf("expected owner/repo, got %q", s)
 	}
 	return s, nil
+}
+
+func (c *Client) owner() string {
+	p := strings.SplitN(c.repo, "/", 2)
+	return p[0]
+}
+
+func (c *Client) repoName() string {
+	p := strings.SplitN(c.repo, "/", 2)
+	if len(p) == 2 {
+		return p[1]
+	}
+	return c.repo
 }
 
 // CloneOrPull uses a fresh installation token each call.
@@ -209,3 +97,46 @@ func (c *Client) CloneOrPull(localPath string) error {
 	pull.Stdout, pull.Stderr = os.Stdout, os.Stderr
 	return pull.Run()
 }
+
+func (c *Client) UpdateFileSigned(ctx context.Context, path, branch, message string, content []byte) (string, error) {
+	owner, repo := c.owner(), c.repoName()
+
+	// obtener contenido actual (para SHA)
+	rc, _, _, err := c.api.Repositories.GetContents(ctx, owner, repo, path,
+		&github.RepositoryContentGetOptions{Ref: branch})
+	if err != nil && !strings.Contains(err.Error(), "404") {
+		return "", err
+	}
+
+	var sha *string
+	if rc != nil && rc.SHA != nil {
+		sha = github.String(*rc.SHA)
+	}
+
+	opts := &github.RepositoryContentFileOptions{
+		Message: github.String(message),
+		Content: content,
+		Branch:  github.String(branch),
+		SHA:     sha,
+		// sin author ni committer → GitHub App firma automáticamente
+	}
+
+	res, _, err := c.api.Repositories.UpdateFile(ctx, owner, repo, path, opts)
+	if err != nil {
+		return "", err
+	}
+
+	return *res.Commit.HTMLURL, nil
+}
+
+func (c *Client) PushAsPr(ctx context.Context, branch, title, body string) error {
+  owner, repo := c.owner(), c.repoName()
+  _, _, err := c.api.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
+    Title: github.String(title),
+    Head:  github.String(branch),
+    Base:  github.String("main"),
+    Body:  github.String(body),
+  })
+  return err
+}
+

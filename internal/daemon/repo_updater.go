@@ -5,10 +5,7 @@ import (
   "os"
   "strings"
 )
-// UpdateImage rewrites the image reference in a compose file.
-// If useDigest is true, it pins as "<repo>@<digest>"; otherwise "<repo>:<ref>".
-// It only writes if the content actually changes.
-// Returns updated=true if the file was modified.
+
 func (r *RepoManager) UpdateImage(filePath, newRef, newDigest string, useDigest bool) (bool, error) {
 	// 1) read file
 	src, err := os.ReadFile(filePath)
@@ -18,35 +15,36 @@ func (r *RepoManager) UpdateImage(filePath, newRef, newDigest string, useDigest 
 	lines := strings.Split(string(src), "\n")
 
 	// 2) scan for the image line that also carries the magos annotation
-	//    (keeps things conservative; won’t touch unrelated images)
 	updated := false
 	for i, line := range lines {
 		if !strings.Contains(line, "image:") || !strings.Contains(line, `{"magos"`) {
 			continue
 		}
 
-		// left = before "#", right = after "#"
 		left, right, ok := strings.Cut(line, "#")
 		if !ok {
 			continue
 		}
 
 		// extract current image ref from "image: <ref>"
-		img := strings.TrimSpace(left)
-		if idx := strings.Index(img, "image:"); idx >= 0 {
-			img = strings.TrimSpace(img[idx+len("image:"):])
+		imgField := strings.TrimRight(left, " \t")
+		idx := strings.Index(imgField, "image:")
+		if idx < 0 {
+			continue
 		}
-		if img == "" {
+		prefix := imgField[:idx]                 // keep original indentation/prefix
+		rest := strings.TrimSpace(imgField[idx:]) // starts with "image:"
+		cur := strings.TrimSpace(strings.TrimPrefix(rest, "image:"))
+		if cur == "" {
 			continue
 		}
 
 		// base repo (strip tag or digest)
-		base := stripRefOrDigest(img)
+		base := stripRefOrDigest(cur)
 
 		// build desired ref
 		var desired string
 		if useDigest {
-			// require a digest-looking value
 			if !strings.HasPrefix(newDigest, "sha256:") {
 				return false, fmt.Errorf("invalid digest %q", newDigest)
 			}
@@ -58,17 +56,16 @@ func (r *RepoManager) UpdateImage(filePath, newRef, newDigest string, useDigest 
 			desired = fmt.Sprintf("%s:%s", base, newRef)
 		}
 
-		// idempotency: if already desired, skip write
-		if normalizeImage(img) == normalizeImage(desired) {
+		// idempotency: already desired
+		if normalizeImage(cur) == normalizeImage(desired) {
 			continue
 		}
 
-		// recompose line, preserving the annotation tail
-		newLine := fmt.Sprintf("    image: %s #%s", desired, right)
+		// recompose line, preserving prefix and annotation tail
+		newLine := fmt.Sprintf("%simage: %s #%s", prefix, desired, right)
 		lines[i] = newLine
 		updated = true
-		// optional: break after first match; remove this if multiple services in same file
-		break
+		break // remove if you want to update multiple services in one file
 	}
 
 	if !updated {
@@ -85,6 +82,7 @@ func (r *RepoManager) UpdateImage(filePath, newRef, newDigest string, useDigest 
 	}
 	return true, nil
 }
+
 
 // stripRefOrDigest returns "registry/owner/name" from an image like
 // "ghcr.io/owner/name:tag" or "ghcr.io/owner/name@sha256:...".

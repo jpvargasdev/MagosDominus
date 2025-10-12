@@ -25,31 +25,44 @@ func (d *Daemon) EventsEmitter() events.Emitter {
 }
 
 func (d *Daemon) consume(ctx context.Context, rm *RepoManager) {
-  for {
-    select {
-    case <-ctx.Done():
-      return
-    case ev := <-d.events:
-      cfg := config.GetGitPreferences() 
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case ev := <-d.events:
+			cfg := config.GetGitPreferences()
 
-      log.Printf("[event] repo=%s ref=%s digest=%s", ev.Repo, ev.Ref, ev.Digest)
-      // 1. rm.Sync()
-      rm.Sync()
-      // 2. rm.UpdateImage(ev.File, ev.Digest)
-      _, err := rm.UpdateImage(ev.File, ev.Ref, ev.Digest, cfg.PreferDigest)
-      if err != nil {
-        log.Printf("[error] update image: %v", err)
-        continue
-      }
-      // 3. rm.CommitAndPush()
-      if err := rm.CommitAndPush(cfg.PreferPR); err != nil {
-        log.Printf("[error] commit and push: %v", err)
-        continue
-      }
-      // 4. Run reconcile.sh
-      log.Printf("[event] running reconcile.sh")
-    }
-  }
+			log.Printf("[event] repo=%s ref=%s digest=%s", ev.Repo, ev.Ref, ev.Digest)
+
+			// 1) sync
+			if err := rm.Sync(); err != nil {
+				log.Printf("[error] repo sync: %v", err)
+				continue
+			}
+
+			// 2) update image in the specific file
+			changed, err := rm.UpdateImage(ev.File, ev.Ref, ev.Digest, cfg.PreferDigest)
+			if err != nil {
+				log.Printf("[error] update image: %v", err)
+				continue
+			}
+			if !changed {
+				log.Printf("[event] no changes")
+				continue
+			}
+
+			log.Printf("[event] updated %s", ev.File)
+
+			// 3) commit & push (or PR) — one file per event
+			if err := rm.CommitAndPush(ev.File, cfg.PreferPR); err != nil {
+				log.Printf("[error] commit and push: %v", err)
+				continue
+			}
+
+			// 4) reconcile hook (placeholder)
+			log.Printf("[event] running reconcile.sh")
+		}
+	}
 }
 
 func (d *Daemon) Start(ctx context.Context) error {
