@@ -129,14 +129,3 @@ func (c *Client) UpdateFileSigned(ctx context.Context, path, branch, message str
 	return *res.Commit.HTMLURL, nil
 }
 
-func (c *Client) PushAsPr(ctx context.Context, branch, title, body string) error {
-  owner, repo := c.owner(), c.repoName()
-  _, _, err := c.api.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
-    Title: github.String(title),
-    Head:  github.String(branch),
-    Base:  github.String("main"),
-    Body:  github.String(body),
-  })
-  return err
-}
-

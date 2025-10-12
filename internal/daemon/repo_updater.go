@@ -6,7 +6,7 @@ import (
   "strings"
 )
 
-func (r *RepoManager) UpdateImage(filePath, newRef, newDigest string, useDigest bool) (bool, error) {
+func (r *RepoManager) UpdateImage(filePath, newRef, newDigest string, policy string) (bool, error) {
 	// 1) read file
 	src, err := os.ReadFile(filePath)
 	if err != nil {
@@ -44,7 +44,7 @@ func (r *RepoManager) UpdateImage(filePath, newRef, newDigest string, useDigest 
 
 		// build desired ref
 		var desired string
-		if useDigest {
+		if policy == "digest" {
 			if !strings.HasPrefix(newDigest, "sha256:") {
 				return false, fmt.Errorf("invalid digest %q", newDigest)
 			}

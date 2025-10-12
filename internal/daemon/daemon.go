@@ -41,7 +41,7 @@ func (d *Daemon) consume(ctx context.Context, rm *RepoManager) {
 			}
 
 			// 2) update image in the specific file
-			changed, err := rm.UpdateImage(ev.File, ev.Ref, ev.Digest, cfg.PreferDigest)
+			changed, err := rm.UpdateImage(ev.File, ev.Ref, ev.Digest, ev.Policy)
 			if err != nil {
 				log.Printf("[error] update image: %v", err)
 				continue
