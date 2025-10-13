@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"magos-dominus/internal/watcher"
+	"github.com/jpvargasdev/Administratus/internal/watcher"
 )
 
 func writeFile(t *testing.T, dir, rel, content string) string {
@@ -31,11 +31,11 @@ func normPath(p string) string {
 
 func TestSplitImageRef(t *testing.T) {
 	tests := []struct {
-		in                string
-		wantRegistry      string
-		wantOwner         string
-		wantName          string
-		wantTag           string
+		in           string
+		wantRegistry string
+		wantOwner    string
+		wantName     string
+		wantTag      string
 	}{
 		{"ghcr.io/jpvargasdev/lexcodex:0.0.3", "ghcr.io", "jpvargasdev", "lexcodex", "0.0.3"},
 		{"ghcr.io/owner/app:latest", "ghcr.io", "owner", "app", "latest"},

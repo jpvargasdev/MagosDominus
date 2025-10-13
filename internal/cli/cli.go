@@ -3,11 +3,12 @@ package internal
 import (
 	"context"
 	"log"
-	"magos-dominus/internal/daemon"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jpvargasdev/Administratus/internal/daemon"
 
 	"github.com/spf13/cobra"
 )
@@ -33,9 +34,9 @@ func signalContext() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	go func() { 
-		<-ch 
-		cancel() 
+	go func() {
+		<-ch
+		cancel()
 	}()
 	return ctx, cancel
 }
@@ -57,8 +58,7 @@ var runCmd = &cobra.Command{
 		ctx, cancel := signalContext()
 		defer cancel()
 
-		d := daemon.New(64) 
-		return d.Start(ctx) 
+		d := daemon.New(64)
+		return d.Start(ctx)
 	},
 }
-

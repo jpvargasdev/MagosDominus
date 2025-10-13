@@ -1,4 +1,4 @@
-module magos-dominus
+module github.com/jpvargasdev/Administratus
 
 go 1.24.0
 

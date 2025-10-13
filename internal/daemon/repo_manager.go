@@ -6,25 +6,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"magos-dominus/internal/config"
-	"magos-dominus/internal/github"
-	"magos-dominus/internal/watcher"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/jpvargasdev/Administratus/internal/config"
+	"github.com/jpvargasdev/Administratus/internal/github"
+	"github.com/jpvargasdev/Administratus/internal/watcher"
 )
 
 type RepoManager struct {
-  CleanURL string
-  Path     string
+	CleanURL string
+	Path     string
 }
 
 type MagosAnnotation struct {
-  File   string
-  Line   int
-  Image  string
-  Policy string
+	File   string
+	Line   int
+	Image  string
+	Policy string
 }
 
 func NewRepoManager() *RepoManager {
@@ -57,13 +58,21 @@ func (r *RepoManager) ParseMagosAnnotations() ([]MagosAnnotation, error) {
 	var out []MagosAnnotation
 
 	err := filepath.WalkDir(r.Path, func(path string, d os.DirEntry, err error) error {
-		if err != nil { return err }
-		if d.IsDir() { return nil }
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
 		ext := strings.ToLower(filepath.Ext(path))
-		if ext != ".yml" && ext != ".yaml" { return nil }
+		if ext != ".yml" && ext != ".yaml" {
+			return nil
+		}
 
 		f, err := os.Open(path)
-		if err != nil { return fmt.Errorf("open %s: %w", path, err) }
+		if err != nil {
+			return fmt.Errorf("open %s: %w", path, err)
+		}
 		defer f.Close()
 
 		sc := bufio.NewScanner(f)
@@ -76,17 +85,23 @@ func (r *RepoManager) ParseMagosAnnotations() ([]MagosAnnotation, error) {
 			}
 
 			left, right, ok := strings.Cut(line, "#")
-			if !ok { continue }
+			if !ok {
+				continue
+			}
 
 			img := strings.TrimSpace(left)
 			if idx := strings.Index(img, "image:"); idx >= 0 {
 				img = strings.TrimSpace(img[idx+len("image:"):])
 			}
-			if img == "" { continue }
+			if img == "" {
+				continue
+			}
 
 			raw := strings.TrimSpace(right)
 			jsonStart := strings.Index(raw, "{")
-			if jsonStart < 0 { continue }
+			if jsonStart < 0 {
+				continue
+			}
 			raw = raw[jsonStart:]
 
 			var payload struct {
@@ -99,7 +114,9 @@ func (r *RepoManager) ParseMagosAnnotations() ([]MagosAnnotation, error) {
 				continue
 			}
 			policy := strings.TrimSpace(payload.Magos.Policy)
-			if policy == "" { policy = "manual" } 
+			if policy == "" {
+				policy = "manual"
+			}
 
 			out = append(out, MagosAnnotation{
 				File:   path,
@@ -134,7 +151,7 @@ func (r *RepoManager) BuildReconcilePaths(annos []MagosAnnotation) []watcher.Tar
 				Name:     name,
 				Tag:      tag,
 			},
-			Policy: a.Policy,
+			Policy:   a.Policy,
 			Interval: 0,
 		})
 	}
@@ -150,15 +167,15 @@ func (r *RepoManager) BuildTargets(annos []MagosAnnotation) []watcher.Target {
 		}
 		registry, owner, name, tag := splitImageRef(a.Image)
 		targets = append(targets, watcher.Target{
-			Name: a.File, 
+			Name: a.File,
 			Image: watcher.ImageRef{
-        Registry: registry,
-        Owner:    owner,
-        Name:     name,
-        Tag:      tag,
-      },
-      Policy: a.Policy,
-      Interval: 0,
+				Registry: registry,
+				Owner:    owner,
+				Name:     name,
+				Tag:      tag,
+			},
+			Policy:   a.Policy,
+			Interval: 0,
 		})
 	}
 	return targets
@@ -189,9 +206,9 @@ func (r *RepoManager) CommitAndPush(absPath string, preferPR bool) error {
 	if err != nil {
 		return fmt.Errorf("make relative: %w", err)
 	}
-	relPath = filepath.ToSlash(relPath)              // GitHub espera forward slashes
-	relPath = strings.TrimPrefix(relPath, "/")       // paranoia
-	relPath = strings.TrimPrefix(relPath, "./")      // más paranoia
+	relPath = filepath.ToSlash(relPath)         // GitHub espera forward slashes
+	relPath = strings.TrimPrefix(relPath, "/")  // paranoia
+	relPath = strings.TrimPrefix(relPath, "./") // más paranoia
 
 	// 2) leer contenido modificado
 	content, err := os.ReadFile(absPath)
@@ -218,9 +235,8 @@ func (r *RepoManager) CommitAndPush(absPath string, preferPR bool) error {
 		// if _, err := gh.PushAsPR(ctx, r.Path, "main", branch, title, body); err != nil {
 		// 	return fmt.Errorf("open PR: %w", err)
 		// }
-    log.Printf("[repo] pushed to PR")
+		log.Printf("[repo] pushed to PR")
 	}
 
 	return nil
 }
-

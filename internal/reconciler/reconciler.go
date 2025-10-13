@@ -1,44 +1,46 @@
-package reconciler 
+package reconciler
 
 import (
-  "bytes"
-  "context"
-  "fmt"
-  "log"
-  "os"
-  "os/exec"
-  "time"
-  "path/filepath"
+	"bytes"
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
 
-  "magos-dominus/internal/watcher"
+	"github.com/jpvargasdev/Administratus/internal/watcher"
 )
 
 func RunReconcile(ctx context.Context, scriptPath, repoRoot, updatedFile, writeMode string) error {
-  if scriptPath == "" { scriptPath = "./reconcile.sh" }
+	if scriptPath == "" {
+		scriptPath = "./reconcile.sh"
+	}
 
-  // guard: script must exist and be executable
-  if st, err := os.Stat(scriptPath); err != nil || (st.Mode()&0o111) == 0 {
-    return fmt.Errorf("reconcile script missing or not executable: %s", scriptPath)
-  }
+	// guard: script must exist and be executable
+	if st, err := os.Stat(scriptPath); err != nil || (st.Mode()&0o111) == 0 {
+		return fmt.Errorf("reconcile script missing or not executable: %s", scriptPath)
+	}
 
-  // bounded time
-  cctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-  defer cancel()
+	// bounded time
+	cctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
 
-  cmd := exec.CommandContext(cctx, scriptPath, repoRoot, updatedFile, writeMode)
-  cmd.Env = append(os.Environ(),
-    os.Getenv("MD_RUNTIME"),
-    // "MD_DRY_RUN=true",
-  )
-  var out bytes.Buffer
-  cmd.Stdout, cmd.Stderr = &out, &out
+	cmd := exec.CommandContext(cctx, scriptPath, repoRoot, updatedFile, writeMode)
+	cmd.Env = append(os.Environ(),
+		os.Getenv("MD_RUNTIME"),
+		// "MD_DRY_RUN=true",
+	)
+	var out bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &out
 
-  err := cmd.Run()
-  log.Printf("[reconcile] exit=%v output:\n%s", err, out.String())
-  if cctx.Err() == context.DeadlineExceeded {
-    return fmt.Errorf("reconcile timeout")
-  }
-  return err
+	err := cmd.Run()
+	log.Printf("[reconcile] exit=%v output:\n%s", err, out.String())
+	if cctx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("reconcile timeout")
+	}
+	return err
 }
 
 func RunAll(ctx context.Context, scriptPath, repoRoot string, targets []watcher.Target) error {

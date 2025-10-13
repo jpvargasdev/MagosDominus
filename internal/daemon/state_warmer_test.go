@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"magos-dominus/internal/state"
-	"magos-dominus/internal/watcher"
+	"github.com/jpvargasdev/Administratus/internal/state"
+	"github.com/jpvargasdev/Administratus/internal/watcher"
 )
 
 func TestWarmState_SeedsEntriesWithEmptyValues(t *testing.T) {

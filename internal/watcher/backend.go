@@ -5,24 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
-  "os"
 
-  pc "magos-dominus/internal/policy"
+	pc "github.com/jpvargasdev/Administratus/internal/policy"
 )
 
 type GHCR struct {
-  client *http.Client
-  mu      sync.Mutex
-  tokens  map[string]string
+	client *http.Client
+	mu     sync.Mutex
+	tokens map[string]string
 }
 
 func NewGHCR() *GHCR {
-  return &GHCR{
-    client: http.DefaultClient,
-    tokens: make(map[string]string),
-  }
+	return &GHCR{
+		client: http.DefaultClient,
+		tokens: make(map[string]string),
+	}
 }
 
 func (g *GHCR) HeadDigest(ctx context.Context, repo, ref, etag, policy string) (string, string, string, bool, error) {
@@ -36,7 +36,7 @@ func (g *GHCR) HeadDigest(ctx context.Context, repo, ref, etag, policy string) (
 			return "", "", "", false, fmt.Errorf("list tags: %w", err)
 		}
 		latest, err := pc.ResolveSemver(tags)
-    if err != nil {
+		if err != nil {
 			return "", "", "", false, fmt.Errorf("resolve semver: %w", err)
 		}
 		candidate = latest
@@ -106,7 +106,6 @@ func (g *GHCR) getManifestDigest(ctx context.Context, repo, ref, etag string) (s
 	}
 }
 
-
 func (g *GHCR) ListTags(ctx context.Context, repo string) ([]string, error) {
 	token, err := g.tokenFor(ctx, repo)
 	if err != nil {
@@ -142,7 +141,6 @@ func (g *GHCR) ListTags(ctx context.Context, repo string) ([]string, error) {
 
 	return result.Tags, nil
 }
-
 
 func (g *GHCR) tokenFor(ctx context.Context, repo string) (string, error) {
 	g.mu.Lock()
