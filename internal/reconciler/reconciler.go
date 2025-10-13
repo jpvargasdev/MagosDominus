@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jpvargasdev/Administratus/internal/watcher"
+	"github.com/jpvargasdev/MagosDominus/internal/watcher"
 )
 
 func RunReconcile(ctx context.Context, scriptPath, repoRoot, updatedFile, writeMode string) error {

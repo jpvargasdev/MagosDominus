@@ -6,11 +6,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/jpvargasdev/Administratus/internal/config"
-	"github.com/jpvargasdev/Administratus/internal/events"
-	"github.com/jpvargasdev/Administratus/internal/reconciler"
-	"github.com/jpvargasdev/Administratus/internal/state"
-	"github.com/jpvargasdev/Administratus/internal/watcher"
+	"github.com/jpvargasdev/MagosDominus/internal/config"
+	"github.com/jpvargasdev/MagosDominus/internal/events"
+	"github.com/jpvargasdev/MagosDominus/internal/reconciler"
+	"github.com/jpvargasdev/MagosDominus/internal/state"
+	"github.com/jpvargasdev/MagosDominus/internal/watcher"
 )
 
 type Daemon struct {

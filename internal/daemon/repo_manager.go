@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jpvargasdev/Administratus/internal/config"
-	"github.com/jpvargasdev/Administratus/internal/github"
-	"github.com/jpvargasdev/Administratus/internal/watcher"
+	"github.com/jpvargasdev/MagosDominus/internal/config"
+	"github.com/jpvargasdev/MagosDominus/internal/github"
+	"github.com/jpvargasdev/MagosDominus/internal/watcher"
 )
 
 type RepoManager struct {

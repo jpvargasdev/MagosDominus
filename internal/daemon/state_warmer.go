@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/jpvargasdev/Administratus/internal/state"
-	"github.com/jpvargasdev/Administratus/internal/watcher"
+	"github.com/jpvargasdev/MagosDominus/internal/state"
+	"github.com/jpvargasdev/MagosDominus/internal/watcher"
 )
 
 var newBackend = func() *watcher.GHCR {
