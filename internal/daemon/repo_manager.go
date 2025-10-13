@@ -44,6 +44,15 @@ func (r *RepoManager) Sync() error {
 	return gh.CloneOrPull(r.Path)
 }
 
+func (r *RepoManager) SyncFresh() error {
+	// blow away any previous checkout
+	if err := os.RemoveAll(r.Path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove repo dir: %w", err)
+	}
+	// now do a normal sync (will clone)
+	return r.Sync()
+}
+
 func (r *RepoManager) ParseMagosAnnotations() ([]MagosAnnotation, error) {
 	var out []MagosAnnotation
 

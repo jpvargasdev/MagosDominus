@@ -82,7 +82,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 
   //  1. Sync GitOps repo 
   rm := NewRepoManager()
-  if err := rm.Sync(); err != nil {
+  if err := rm.SyncFresh(); err != nil {
     return err
   }
   log.Printf("[repo] synced at %s", rm.Path)

@@ -68,73 +68,65 @@ func (w *Watcher) Start(ctx context.Context, st *state.File) error {
 }
 
 func (w *Watcher) runOnce(ctx context.Context, ghcr *GHCR, st *state.File) {
-	for _, t := range w.targets {
-		log.Printf("[watcher] checking target: %s (%s/%s/%s:%s) policy=%s interval=%d",
-			t.Name,
-			t.Image.Registry,
-			t.Image.Owner,
-			t.Image.Name,
-			t.Image.Tag,
-			t.Policy,
-			t.Interval,
-		)
+  for _, t := range w.targets {
+    repo := fmt.Sprintf("%s/%s", t.Image.Owner, t.Image.Name)
+    refIn := strings.ToLower(t.Image.Tag)
 
-		repo := fmt.Sprintf("%s/%s", t.Image.Owner, t.Image.Name)
-		ref := strings.ToLower(t.Image.Tag)
-
-		key := state.Key(
-			strings.ToLower(t.Image.Registry),
-			strings.ToLower(t.Image.Owner),
-			strings.ToLower(t.Image.Name),
-			ref,
-		)
-
-		prev, ok := st.Get(key)
-		etagIn := ""
-		if ok {
-			etagIn = prev.ETag
-		}
-
-		digest, resolvedRef, etagOut, notMod, err := ghcr.HeadDigest(ctx, repo, ref, etagIn, t.Policy)
-    log.Printf("[watcher] repo=%s ref=%s digest=%s", repo, ref, etagOut)
-		if err != nil {
-			log.Printf("[watcher] skip %s:%s: %v", repo, ref, err)
-			continue
-		}
-
-		if notMod {
-			st.UpdateChecked(key, t.Policy)
-			continue
-		}
-
-		// no baseline → seed and move on
-		if !ok {
-			st.UpsertDigest(key, digest, etagOut, t.Policy)
-			_ = st.Save()
-			log.Printf("[watcher] seeded baseline for %s:%s -> %s", repo, ref, digest)
-			continue
-		}
-
-		// same digest → just refresh
-		if prev.Digest == digest {
-			st.UpsertDigest(key, digest, etagOut, t.Policy)
-			continue
-		}
-
-		// real update
-		changed := st.UpsertDigest(key, digest, etagOut, t.Policy)
-		if changed {
-			log.Printf("[watcher] update: %s:%s -> digest=%s", repo, resolvedRef, digest)
-			w.emitter.Emit(events.Event{
-				Discovered: time.Now().UTC(),
-				File:       t.Name,
-				Repo:       repo,
-				Ref:        resolvedRef,
-				Digest:     digest,
-				Policy:     t.Policy,
-			})
-		} else {
-      log.Printf("[watcher] no change: %s:%s -> digest=%s", repo, resolvedRef, digest)
+    // For semver, store under a stable "channel" key
+    refKey := refIn
+    if strings.EqualFold(t.Policy, "semver") {
+      refKey = "semver"
     }
-	}
+
+    key := state.Key(
+      strings.ToLower(t.Image.Registry),
+      strings.ToLower(t.Image.Owner),
+      strings.ToLower(t.Image.Name),
+      refKey,
+    )
+
+    prev, ok := st.Get(key)
+    etagIn := ""
+    if ok { etagIn = prev.ETag }
+
+    digest, resolvedRef, etagOut, notMod, err := ghcr.HeadDigest(ctx, repo, refIn, etagIn, t.Policy)
+    if err != nil {
+      log.Printf("[watcher] skip %s:%s: %v", repo, refIn, err)
+      continue
+    }
+
+    // Log with resolved ref (fixes the confusion)
+    log.Printf("[watcher] repo=%s resolvedRef=%s policy=%s notMod=%v", repo, resolvedRef, t.Policy, notMod)
+
+    if notMod {
+      st.UpdateChecked(key, t.Policy)
+      continue
+    }
+
+    // Seed baseline if none
+    if !ok {
+      st.UpsertDigest(key, digest, etagOut, t.Policy)
+      st.Save()
+      log.Printf("[watcher] seeded baseline for %s:%s -> %s", repo, resolvedRef, digest)
+      continue
+    }
+
+    if prev.Digest == digest {
+      st.UpsertDigest(key, digest, etagOut, t.Policy)
+      continue
+    }
+
+    changed := st.UpsertDigest(key, digest, etagOut, t.Policy)
+    if changed {
+      log.Printf("[watcher] update: %s:%s -> digest=%s", repo, resolvedRef, digest)
+      w.emitter.Emit(events.Event{
+        Discovered: time.Now().UTC(),
+        File:       t.Name,
+        Repo:       repo,
+        Ref:        resolvedRef, // <- the semver-resolved ref
+        Digest:     digest,
+        Policy:     t.Policy,
+      })
+    }
+  }
 }

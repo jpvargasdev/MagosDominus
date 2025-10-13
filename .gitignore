@@ -32,7 +32,10 @@ go.work.sum
 # .vscode/
 *.pem
 *tmp
+*.txt
+bin
 
 **/scripts/reconcile.sh
+**/scripts/secrets-build.sh
 secrets/*.env
 secrets/*.sops.tmp

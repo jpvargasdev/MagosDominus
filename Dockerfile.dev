@@ -1,16 +1,20 @@
 FROM golang:1.25-alpine
 
+# tools we need inside the container
+RUN apk add --no-cache \
+  bash git curl jq openssl \
+  docker-cli docker-cli-compose \
+  sops
+
 WORKDIR /app
 
-RUN apk add --no-cache git bash docker-cli docker-cli-compose
-
+# live-reload for dev
 RUN go install github.com/air-verse/air@latest
 
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-
-RUN chmod +x scripts/*.sh || true
+RUN chmod +x scripts/*.sh
 
 CMD ["air", "-c", ".air.toml"]
