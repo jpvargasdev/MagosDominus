@@ -1,4 +1,4 @@
-module github.com/jpvargasdev/MagosDominus
+module github.com/jpvargasdev/magos-dominus
 
 go 1.24.0
 

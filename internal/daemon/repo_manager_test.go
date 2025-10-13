@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jpvargasdev/MagosDominus/internal/watcher"
+	"github.com/jpvargasdev/magos-dominus/internal/watcher"
 )
 
 func writeFile(t *testing.T, dir, rel, content string) string {

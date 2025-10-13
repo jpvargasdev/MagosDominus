@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jpvargasdev/MagosDominus/internal/events"
-	"github.com/jpvargasdev/MagosDominus/internal/state"
+	"github.com/jpvargasdev/magos-dominus/internal/events"
+	"github.com/jpvargasdev/magos-dominus/internal/state"
 )
 
 type Target struct {

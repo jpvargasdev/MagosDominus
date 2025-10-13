@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jpvargasdev/MagosDominus/internal/daemon"
+	"github.com/jpvargasdev/magos-dominus/internal/daemon"
 
 	"github.com/spf13/cobra"
 )

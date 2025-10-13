@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	pc "github.com/jpvargasdev/MagosDominus/internal/policy"
+	pc "github.com/jpvargasdev/magos-dominus/internal/policy"
 )
 
 type GHCR struct {
