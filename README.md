@@ -1,10 +1,10 @@
-# ⚙️ MagosDominus (a.k.a. Magos)
+# ⚙️ Magos Dominus (a.k.a. Magos)
 
 “The Machine does not err. The flesh errs. The Code is truth, and I am its voice.” – Credus del Adeptus Mechanicus
 
 ## 📜 About
 
-MagosDominus is a lightweight GitOps agent forged in the spirit of the Adeptus Mechanicus. Its sole purpose: to enforce the declared state from your sacred repository (Git) and reconcile it with the material reality of your homelab.
+Magos Dominus is a lightweight GitOps agent forged in the spirit of the Adeptus Mechanicus. Its sole purpose: to enforce the declared state from your sacred repository (Git) and reconcile it with the material reality of your homelab.
 
 Unlike the bloated rites of Kubernetes and endless CRDs, MagosDominus imposes order directly on a simple Linux server with Podman Compose. No unnecessary ceremony, no wasted bureaucracy – only obedience to the written mandate.
 
