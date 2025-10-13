@@ -1,12 +1,13 @@
-package main
+package sever
 
 import (
 	"log"
-	"magos-dominus/internal/cli"
+
+	"github.com/jpvargasdev/magos-dominus/internal/cli"
 )
 
 func main() {
-	if err := internal.Execute(); err != nil {
+	if err := cli.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
