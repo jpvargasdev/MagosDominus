@@ -1,0 +1,17 @@
+[Unit]
+Description=Magos Dominus GitOps Daemon (Rootless Podman)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/magos-dominus run
+WorkingDirectory=%h/.local/share/magos-dominus
+Environment="MD_RECONCILE_SCRIPT=%h/.../magos-dominus/scripts/reconcile.sh"
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
