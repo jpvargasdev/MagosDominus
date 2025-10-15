@@ -51,6 +51,8 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ env.BINARY }}-${{ github.ref_name || 'dev' }}"
-          path: dist/*
+          name: ${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            dist/${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}*
           if-no-files-found: error
+          retention-days: 14
