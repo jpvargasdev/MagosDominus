@@ -35,8 +35,11 @@ jobs:
           VERSION="${GITHUB_REF_NAME:-dev}"
           COMMIT="${GITHUB_SHA}"
           DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          LDFLAGS="-s -w -X main.version=$VERSION -X main.commit=$COMMIT -X main.date=$DATE"
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+          LDFLAGS="-s -w \
+            -X github.com/jpvargasdev/magos-dominus/internal/cli.version=$VERSION \
+            -X github.com/jpvargasdev/magos-dominus/internal/cli.commit=$COMMIT \
+            -X github.com/jpvargasdev/magos-dominus/internal/cli.date=$DATE"
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 \
             go build -trimpath -ldflags "$LDFLAGS" \
             -o "dist/${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" \
             ${{ env.MAIN_PKG }}
