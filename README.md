@@ -2,99 +2,102 @@
   <img src="./magos-logo.png" alt="Magos Dominus Logo" width="200"/>
 </p>
 
-<h1 align="center">Magos Dominus (A.K.A Magos)</h1>
+<h1 align="center">🧙 Magos Dominus (A.K.A Magos)</h1>
 <p align="center">
-  A tiny self-hosted GitOps daemon for homelabs — automating deployments with <b>mystical precision</b>.
+  A self-hosted GitOps daemon for homelabs — automating container deployments with <b>mystical precision</b>.
 </p>
 
-“The Machine does not err. The flesh errs. The Code is truth, and I am its voice.” – Credus del Adeptus Mechanicus
+> “The Machine does not err. The flesh errs. The Code is truth, and I am its voice.”  
+> — Credus del Adeptus Mechanicus
+
+---
 
 ## 📜 About
 
-MagosDominus is a lightweight GitOps agent forged in the spirit of the Adeptus Mechanicus. Its sole purpose: to enforce the declared state from your sacred repository (Git) and reconcile it with the material reality of your homelab.
+**Magos Dominus** is a lightweight GitOps agent forged in the spirit of the Adeptus Mechanicus.  
+Its purpose: to enforce the declared state from your sacred Git repository and reconcile it with the material world of your homelab.
 
-Unlike the bloated rites of Kubernetes and endless CRDs, MagosDominus imposes order directly on a simple Linux server with Podman Compose. No unnecessary ceremony, no wasted bureaucracy – only obedience to the written mandate.
+Unlike the bloated rites of Kubernetes and its labyrinthine CRDs, **Magos** acts directly on a simple Linux host using **Podman Compose** — pure, direct, and efficient.  
+No unnecessary ceremony. No wasted bureaucracy. Only obedience to the written manifest.
 
-Each reconciliation loop is a ritual. Each deployment, a litany. Where drift appears, corruption is purged. Where the manifest and the machine diverge, the Magos enforces the will of the Code.
+Each reconciliation loop is a ritual. Each deployment, a litany.  
+Where drift appears, corruption is purged. Where the manifest and the machine diverge, **Magos enforces the will of the Code.**
 
-⸻
+---
 
-## ✨ Features (planned)
-	•	Registry watcher (GHCR first, later DockerHub/Quay).
-	•	ImagePolicy evaluation:
-	•	Semantic version ranges (>=1.2.0 <2.0.0)
-	•	Regex filters on tags
-	•	Architecture constraints (e.g. amd64)
-	•	Min age delays to avoid race conditions
-	•	(Optional) Signature verification with cosign
-	•	(Optional) Vulnerability scanning (Trivy)
-	•	GitOps reconciler:
-	•	Patches Compose files with immutable digests (@sha256:...)
-	•	Commits and pushes via GitHub App (no long-lived tokens)
-	•	Direct push to main or PR workflow
-	•	Optional applier:
-	•	Decrypts secrets with SOPS
-	•	Runs podman-compose pull && up -d for the affected stack
-	•	State & observability:
-	•	Minimal local cache (last digest applied)
-	•	Structured logs
-	•	/healthz and /metrics endpoint (future)
-  
-## 📂 Repository layout
+## ⚙️ Core Features (implemented)
 
-cmd/server/           # entrypoint
-internal/cli/         # command-line interface
-internal/watcher/     # registry polling & events
-internal/daemon/      # reconciliation loop     
+✅ **Daemonized GitOps loop**
+- Runs continuously via `systemd` as a rootless or privileged service.  
+- Pulls from a GitHub App-authenticated repo.
 
-## 🔑 Config basics .env file
-* MD_REPO = env variable with the path to your GitOps repo.
+✅ **Image watcher**
+- Monitors container registries (currently **GHCR**).  
+- Evaluates semantic versions and filters valid tags.
 
-# Image policy
-Add a comment in your compose file, just after the image line, like so:
+✅ **Reconciler**
+- Detects updated image versions matching defined policies.  
+- Rewrites Compose files with immutable `@sha256` digests.  
+- Commits and pushes via GitHub App credentials.
 
-1. Policy Semver 
-image: ...image:0.0.1 # {"magos": {"policy": "semver", "repo": "repoUrl"}}
+✅ **Secrets integration**
+- Automatically decrypts **SOPS**-encrypted files using local `age` keys.  
+- Supports environment variable injection and runtime secret expansion.
 
-2. Policy Latest
-image: ...image:latest # {"magos": {"policy": "latest", "repo": "repoUrl"}}
+✅ **Applier**
+- Executes `podman compose pull && up -d` to deploy updated stacks.  
+- Supports rootless environments (with **Pasta** networking fallback).
 
-3. Policy Digest
-image: ...image@sha256:abcd1234 # {"magos": {"policy": "digest", "repo": "repoUrl"}}
+✅ **System integration**
+- Managed via **systemd --user** or as a root service.  
+- Logs and metrics available via `journalctl -fu magos-dominus`.
 
-* JSON comment should start with # {"magos"
-* MagosDominus ignores comments that do not start with # {"magos"
-* The field "policy" defines the policy to be enforced
-* Reconciliation only replaces <tag> or <digest> with the latest matching tag or digest.
+✅ **Cross-platform binaries**
+- Released for Linux, macOS, and Windows through GitHub Actions.
 
-## 🚀 How it works
-	1.	Watcher detects a new image in GHCR.
-	2.	Policy evaluator checks if it matches semver, arch, signature, etc.
-	3.	If approved, Reconciler patches the GitOps repo (image: → digest), commits, and pushes with a GitHub App identity.
-	4.	Loop or Applier on the homelab pulls the repo, decrypts secrets, and redeploys the stack.
+---
 
-⸻
+## 🧩 Repository Layout
 
-## 🔒 Security
-	•	Uses a GitHub App for ephemeral push tokens.
-	•	Branch protection recommended on main.
-	•	Secrets encrypted with SOPS + age, never stored in plain Git.
-	•	Images pinned by digest in GitOps.
-	•	Optional: cosign for signature verification.
+* cmd/server/           # Entrypoint and CLI
+* internal/cli/         # Command-line interface
+* internal/watcher/     # Registry watcher & event loop
+* internal/daemon/      # Core reconciliation engine
+* scripts/              # Reconcile + secrets decryption helpers
+* configs/              # Default YAML configuration
 
-⸻
+## 🔧 Configuration
 
-## 🛠️ Roadmap
-	•	MVP: GHCR polling → semver policy → patch Compose → push to main
-	•	Add minAge & arch constraints
-	•	Applier: SOPS decrypt + podman-compose
-	•	PR mode instead of push
-	•	Cosign signature verification
-	•	Trivy vulnerability checks
-	•	/healthz + /metrics
+### `.env` essentials
+```ini
+MD_REPO=https://github.com/yourname/your-gitops-repo
+MD_RUNTIME=podman/docker
+SOPS_AGE_KEY_FILE=/home/user/.config/sops/age/keys.txt
+GITHUB_APP_ID=123456
+GITHUB_APP_PRIVATE_KEY=/home/user/.local/share/magos/github_app.pem
+```
 
-⸻
+## Compose Policy Annotation
+Magos recognizes image policies through comments in your docker-compose.yml:
 
-## 📜 License
+```yaml
+services:
+  lexcodex:
+    image: ghcr.io/jpvargasdev/lexcodex:0.0.1 # {"magos": {"policy": "semver", "repo": "ghcr.io/jpvargasdev/lexcodex"}}
+```
 
-MIT.
+Supported policies:
+* semver — Enforce semantic version updates (e.g., >=1.2.0 <2.0.0)
+* latest — Always reconcile to the latest tag
+* digest — Enforce a specific immutable digest
+
+## 🛠️ Future Augmentations (planned)
+* 🔮 Multi-registry support: DockerHub, Quay.io
+* 🕵️‍♂️ Vulnerability scanning via Trivy
+* 🔏 Image signature verification (cosign)
+* 🧩 Health & metrics endpoints (/healthz, /metrics)
+* 🧠 Rule-based policies (e.g. minAge, arch constraints)
+* 📨 Webhook-driven reconciliations (GitHub Events)
+* 🧬 PR-based workflows instead of direct commits
+* 🧰 Podman network auto-healing and diagnostics
+
