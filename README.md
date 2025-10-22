@@ -1,4 +1,11 @@
-# ⚙️ MagosDominus (a.k.a. Magos)
+<p align="center">
+  <img src="./magos-logo.png" alt="Magos Dominus Logo" width="200"/>
+</p>
+
+<h1 align="center">Magos Dominus (A.K.A Magos)</h1>
+<p align="center">
+  A tiny self-hosted GitOps daemon for homelabs — automating deployments with <b>mystical precision</b>.
+</p>
 
 “The Machine does not err. The flesh errs. The Code is truth, and I am its voice.” – Credus del Adeptus Mechanicus
 
